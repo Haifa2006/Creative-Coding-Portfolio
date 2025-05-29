@@ -1,0 +1,79 @@
+let data = [
+  { fruit: "Mango", value: 14, color: "#FFC107" },
+  { fruit: "Banana", value: 10, color: "#FFEB3B" },
+  { fruit: "Apple", value: 8, color: "#F44336" },
+  { fruit: "Orange", value: 6, color: "#FF9800" },
+  { fruit: "Grapes", value: 7, color: "#9C27B0" },
+  { fruit: "Pineapple", value: 5, color: "#FFCC80" },
+  { fruit: "Watermelon", value: 4, color: "#66BB6A" },
+  { fruit: "Strawberry", value: 6, color: "#E91E63" }
+];
+
+let positions = [];
+let maxVal = 14;
+let barWidth;
+let hoveredBar = -1;
+let bounciness = [];
+
+function setup() {
+  createCanvas(1000, 600);
+  textFont("Georgia");
+  textAlign(CENTER, CENTER);
+  barWidth = width / data.length;
+
+  
+  data = shuffle(data);
+
+  for (let i = 0; i < data.length; i++) {
+    positions[i] = {
+      x: i * barWidth + barWidth / 2,
+      targetHeight: map(data[i].value, 0, maxVal, 0, height - 120),
+      currentHeight: 0
+    };
+    bounciness[i] = random(2, 5); 
+  }
+}
+
+function draw() {
+  background(15, 20, 35);
+
+  // Chart heading
+  fill(255);
+  textSize(32);
+  text("Favorite Fruits Survey ", width / 2, 40);
+
+  for (let i = 0; i < data.length; i++) {
+    let pos = positions[i];
+
+
+    pos.currentHeight += (pos.targetHeight - pos.currentHeight) * 0.05;
+
+    let x = pos.x;
+    let barHeight = pos.currentHeight;
+    let y = height - barHeight - 50;
+
+    // Hover effect
+    if (mouseX > x - barWidth / 4 && mouseX < x + barWidth / 4 && mouseY > y && mouseY < height - 50) {
+      hoveredBar = i;
+    }
+
+    fill(data[i].color);
+    if (i === hoveredBar) {
+      barHeight += 10;
+      cursor(HAND);
+    } else {
+      cursor(ARROW);
+    }
+
+    rectMode(CENTER);
+    rect(x, height - barHeight / 2 - 50, barWidth / 2, barHeight, 10);
+
+   
+    fill(255);
+    textSize(16);
+    text(data[i].fruit, x, height - 25);
+    text(data[i].value, x, height - barHeight - 70);
+  }
+
+  hoveredBar = -1;
+}
