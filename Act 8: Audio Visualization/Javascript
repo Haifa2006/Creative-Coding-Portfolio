@@ -1,0 +1,103 @@
+let soundFile, fft;
+let waveform;
+let hueStart;
+let freqBins;
+
+function preload() {
+  soundFile = loadSound('Audio.mp3');
+}
+
+function setup() {
+  createCanvas(800, 600);
+  colorMode(HSL);
+
+  fft = new p5.FFT();
+  fft.setInput(soundFile);
+
+  // Click to play/pause
+  let canvas = document.querySelector('canvas');
+  canvas.addEventListener('click', togglePlayback);
+}
+
+function togglePlayback() {
+  if (!soundFile.isPlaying()) {
+    userStartAudio();
+    soundFile.loop();
+  } else {
+    soundFile.stop();
+  }
+}
+
+function draw() {
+  background(210, 30, 10); // Dark blue background
+
+  if (soundFile.isPlaying()) {
+    let spectrum = fft.analyze();
+    waveform = fft.waveform();
+    freqBins = spectrum.length;
+
+    let bass = fft.getEnergy("bass");
+    hueStart = map(bass, 0, 255, 0, 360);
+
+    // Draw pulsing central ellipse
+    let centerSize = map(bass, 0, 255, 80, 250);
+    let centerHue = (hueStart + bass) % 360;
+    fill(centerHue, 90, 65, 0.7);
+    ellipse(width / 2, height / 2, centerSize, centerSize);
+
+    fill((centerHue + 40) % 360, 100, 75, 0.4);
+    ellipse(width / 2, height / 2, centerSize * 0.6, centerSize * 0.6);
+
+    // Draw waveform visualization
+    noFill();
+    strokeWeight(3);
+    beginShape();
+    for (let i = 0; i < waveform.length; i++) {
+      let y = map(waveform[i], -1, 1, height * 0.75 - 40, height * 0.75 + 40);
+      let x = map(i, 0, waveform.length - 1, 0, width);
+      stroke((hueStart + i * 3) % 360, 80, 65, 0.6);
+      vertex(x, y);
+    }
+    endShape();
+
+    // Draw frequency bars
+    let barWidth = width / freqBins;
+    for (let i = 0; i < freqBins; i++) {
+      let freqValue = spectrum[i];
+      let h = map(freqValue, 0, 255, 20, height * 0.6);
+      let x = i * barWidth;
+      let hue = (hueStart + i * (360 / freqBins)) % 360;
+      let sat = map(bass, 0, 255, 60, 90);
+      let light = map(freqValue, 0, 255, 40, 85);
+
+      fill(hue, sat, light, 0.75);
+      rect(x, height - h, barWidth * 0.8, h, 10);
+    }
+
+    let midEnergy = fft.getEnergy("mid");
+    let numOrbs = 8;
+    let angleStep = TWO_PI / numOrbs;
+    let t = millis() / 1000;
+    for (let i = 0; i < numOrbs; i++) {
+      let angle = t * 2 + i * angleStep;
+      let radius = map(midEnergy, 0, 255, 130, 200) + 15 * sin(t * 4 + i);
+      let orbX = width / 2 + radius * cos(angle);
+      let orbY = height / 2 + radius * sin(angle);
+
+      fill((hueStart + i * 40 + frameCount) % 360, 100, 70, 0.9);
+      circle(orbX, orbY, 20);
+    }
+  }
+
+  // Draw dynamic instruction text
+  noStroke();
+  fill(210, 60, 85, 0.7);
+  textAlign(CENTER, CENTER);
+  textSize(16);
+  
+  if (soundFile.isPlaying()) {
+    text("Click to stop audio | Enjoy the visuals!", width / 2, height - 20);
+  } else {
+    text("Click to start audio | Ready for music!", width / 2, height - 20);
+  }
+}
